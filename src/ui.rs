@@ -20,7 +20,10 @@ pub fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, app: &mu
     draw_header(frame, app, chunks[0]);
     draw_footer(frame, app, chunks[2]);
 
-    let _content_chunk = Layout::default().constraints([Constraint::Min(0)]).vertical_margin(1).split(chunks[1])[0];
+    let _content_chunk = Layout::default()
+        .constraints([Constraint::Min(0)])
+        .vertical_margin(1)
+        .split(chunks[1])[0];
 }
 
 pub fn draw_header(
