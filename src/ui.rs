@@ -61,7 +61,7 @@ pub fn draw_footer(
     _app: &mut App,
     area: Rect,
 ) {
-    let keybinds = vec![
+    let keybinds = [
         ("1/2/3/4", "select tab"),
         ("r", "refresh"),
         ("k", "api key"),
