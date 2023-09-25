@@ -1,0 +1,15 @@
+[package]
+name = "undiscovered_yt"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ratatui = { version = "0.23.0", features = ["all-widgets"] }
+crossterm = { default-features = false, version = "0.27" }
+anyhow = "1.0.75"
+serde = { version = "1.0.188", features = ["derive"] }
+toml = "0.8.0"
+directories = "5.0.1"
+yt-api = "0.3.2"
