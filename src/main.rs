@@ -11,6 +11,7 @@ use std::io::Stdout;
 
 mod app;
 mod config;
+mod discover;
 mod ui;
 
 const BINARY_NAME: &str = "Undiscovered_YT";

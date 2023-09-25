@@ -1,4 +1,5 @@
-use crate::app::{App, TABS};
+use crate::app::App;
+use crate::discover::Discovery;
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -20,10 +21,12 @@ pub fn render_app(frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>, app: &mu
     draw_header(frame, app, chunks[0]);
     draw_footer(frame, app, chunks[2]);
 
-    let _content_chunk = Layout::default()
+    let content_chunk = Layout::default()
         .constraints([Constraint::Min(0)])
         .vertical_margin(1)
         .split(chunks[1])[0];
+
+    draw_results(frame, app, content_chunk);
 }
 
 pub fn draw_header(
@@ -44,7 +47,7 @@ pub fn draw_header(
     );
     frame.render_widget(Paragraph::new(title), chunks[0]);
 
-    let tabs = Tabs::new::<Span>(TABS.iter().map(|t| Span::raw(*t)).collect())
+    let tabs = Tabs::new::<Span>(Discovery::OPTIONS.iter().map(|t| Span::raw(*t)).collect())
         .style(Style::default().add_modifier(Modifier::DIM))
         .highlight_style(
             Style::default()
@@ -62,7 +65,7 @@ pub fn draw_footer(
     area: Rect,
 ) {
     let keybinds = [
-        ("1/2/3/4", "select tab"),
+        ("1/2/3/4", "select discovery"),
         ("r", "refresh"),
         ("k", "api key"),
         ("esc", "close app"),
@@ -92,4 +95,59 @@ pub fn draw_footer(
     let line = Line::from(spans);
 
     frame.render_widget(Paragraph::new(line), area);
+}
+
+pub fn draw_results(
+    frame: &mut ratatui::Frame<CrosstermBackend<Stdout>>,
+    app: &mut App,
+    area: Rect,
+) {
+    let list_chunks = Layout::default()
+        .constraints(vec![Constraint::Length(3); 5])
+        .split(area);
+
+    for (n, result) in app.results.lock().unwrap().iter().enumerate() {
+        let selected = false;
+
+        let style = if selected {
+            Style::default().fg(Color::LightRed)
+        } else {
+            Style::default()
+        };
+
+        let _prefix = if selected { " │ " } else { "   " };
+
+        let text = Text {
+            lines: vec![
+                Line::from(vec![
+                    // Span::styled(prefix, style),
+                    Span::styled(
+                        result
+                            .snippet
+                            .title
+                            .to_owned()
+                            .unwrap_or("Unnamed".to_string()),
+                        style.add_modifier(Modifier::BOLD),
+                    ),
+                ]),
+                Line::from(vec![
+                    // Span::styled(prefix, style),
+                    Span::styled("Views: ", style.add_modifier(Modifier::DIM)),
+                    Span::styled("0", style.add_modifier(Modifier::DIM)),
+                    Span::styled(" • ", style.add_modifier(Modifier::DIM)),
+                    Span::styled("Channel: ", style.add_modifier(Modifier::DIM)),
+                    Span::styled(
+                        result
+                            .snippet
+                            .channel_title
+                            .to_owned()
+                            .unwrap_or("anonymous".to_string()),
+                        style.add_modifier(Modifier::DIM),
+                    ),
+                ]),
+            ],
+        };
+
+        frame.render_widget(Paragraph::new(text), list_chunks[n]);
+    }
 }

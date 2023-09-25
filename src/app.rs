@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::discover::{start_discovering, Discovery};
 use crate::ui::render_app;
 use crate::TICK_RATE_MILLIS;
 use anyhow::Result;
@@ -7,16 +8,17 @@ use crossterm::event::{Event, KeyCode};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io::Stdout;
+use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 use std::time::Duration;
-
-pub const TABS: &[&str] = &["webcam", "pc", "smartphone", "misc"];
-pub const TAB_COUNT: usize = TABS.len();
+use yt_api::search::SearchResult;
 
 #[derive(Default)]
 pub struct App {
     pub config: Config,
     pub tab: usize,
-    pub show_api_modal: bool,
+    pub results: Arc<Mutex<Vec<SearchResult>>>,
+    pub discover_thread: Option<JoinHandle<()>>,
 }
 
 impl App {
@@ -35,20 +37,33 @@ pub fn run_app(terminal: &mut Terminal<CrosstermBackend<Stdout>>, app: &mut App)
 
         let event = event::read()?;
 
+        if let Some(handle) = &app.discover_thread {
+            if handle.is_finished() {
+                app.discover_thread = None;
+            }
+        }
+
         if let Event::Key(key) = event {
             match key.code {
                 // Exit app
                 KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
 
-                // Switch Tabs
-                KeyCode::Tab => app.tab = (app.tab + 1) % TAB_COUNT,
-                KeyCode::BackTab => app.tab = (app.tab + TAB_COUNT - 1) % TAB_COUNT,
-                KeyCode::Char('1') => app.tab = 0,
-                KeyCode::Char('2') => app.tab = 1,
-                KeyCode::Char('3') => app.tab = 2,
-                KeyCode::Char('4') => app.tab = 3,
-
-                KeyCode::Char('k') => app.show_api_modal = !app.show_api_modal,
+                KeyCode::Char('1') => {
+                    app.tab = 0;
+                    start_discovering(app, Discovery::Webcam);
+                }
+                KeyCode::Char('2') => {
+                    app.tab = 1;
+                    start_discovering(app, Discovery::Pc);
+                }
+                KeyCode::Char('3') => {
+                    app.tab = 2;
+                    start_discovering(app, Discovery::SmartPhone);
+                }
+                KeyCode::Char('4') => {
+                    app.tab = 3;
+                    start_discovering(app, Discovery::Misc);
+                }
 
                 _ => {}
             }
