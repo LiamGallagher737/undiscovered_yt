@@ -1,5 +1,6 @@
 use crate::cleanup;
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use colored::Colorize;
 use crossterm::event::KeyEventKind::Press;
 use crossterm::event::{read, Event, KeyCode, KeyModifiers};
@@ -20,9 +21,14 @@ pub fn results_interface(stdout: &mut Stdout, results: Vec<SearchResult>) -> Res
                 .map(|t| t.chars().take(width as usize - 6).collect())
                 .unwrap_or("Untitled".to_string())
                 .bold();
+
             let info = format!(
-                "Views: {} • Channel: {}",
-                0,
+                "Age: {} • Channel: {}",
+                result
+                    .snippet
+                    .published_at
+                    .map(video_age)
+                    .unwrap_or("unknown".to_string()),
                 result
                     .snippet
                     .channel_title
@@ -30,6 +36,7 @@ pub fn results_interface(stdout: &mut Stdout, results: Vec<SearchResult>) -> Res
                     .unwrap_or("anonymous".to_string())
             )
             .dimmed();
+
             println!();
             if cursor == n {
                 println!("{} {}", "❯".bright_red(), title.bright_red());
@@ -89,5 +96,16 @@ pub fn results_interface(stdout: &mut Stdout, results: Vec<SearchResult>) -> Res
         }
         stdout.execute(cursor::MoveUp(results.len() as u16 * 3))?;
         stdout.execute(Clear(ClearType::FromCursorDown))?;
+    }
+}
+
+fn video_age(publish_date: DateTime<Utc>) -> String {
+    let diff = Utc::now() - publish_date;
+    if diff.num_minutes() < 60 {
+        format!("{} minutes", diff.num_minutes())
+    } else if diff.num_hours() < 24 {
+        format!("{} hours", diff.num_hours())
+    } else {
+        format!("{} days", diff.num_days())
     }
 }

@@ -38,11 +38,11 @@ pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
                     if selected_discovery > 0 {
                         selected_discovery -= 1
                     } else {
-                        selected_discovery = Discovery::VARIANT_COUNT - 1
+                        selected_discovery = Discovery::VARIANTS.len() - 1
                     }
                 }
                 KeyCode::Down => {
-                    if selected_discovery < Discovery::VARIANT_COUNT - 1 {
+                    if selected_discovery < Discovery::VARIANTS.len() - 1 {
                         selected_discovery += 1
                     } else {
                         selected_discovery = 0
@@ -61,11 +61,11 @@ pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
                 break;
             }
         }
-        stdout.execute(cursor::MoveUp(4))?;
+        stdout.execute(cursor::MoveUp(Discovery::VARIANTS.len() as u16))?;
         stdout.execute(Clear(ClearType::FromCursorDown))?;
     }
 
-    stdout.execute(cursor::MoveUp(5))?;
+    stdout.execute(cursor::MoveUp(Discovery::VARIANTS.len() as u16 + 1))?;
     stdout.execute(Clear(ClearType::FromCursorDown))?;
 
     println!(
@@ -120,19 +120,17 @@ pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
                     if extras_cursor > 0 {
                         extras_cursor -= 1
                     } else {
-                        extras_cursor = Extra::VARIANT_COUNT - 1
+                        extras_cursor = Extra::VARIANTS.len() - 1
                     }
                 }
                 KeyCode::Down => {
-                    if extras_cursor < Extra::VARIANT_COUNT - 1 {
+                    if extras_cursor < Extra::VARIANTS.len() - 1 {
                         extras_cursor += 1
                     } else {
                         extras_cursor = 0
                     }
                 }
                 KeyCode::Char('1') => extras_cursor = 0,
-                KeyCode::Char('2') => extras_cursor = 1,
-                KeyCode::Char('3') => extras_cursor = 2,
                 KeyCode::Char(' ') => {
                     let extra = Extra::from_index(extras_cursor);
                     if let Some(n) = selected_extras.iter().position(|v| *v == extra) {
@@ -151,11 +149,11 @@ pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
                 break;
             }
         }
-        stdout.execute(cursor::MoveUp(3))?;
+        stdout.execute(cursor::MoveUp(Extra::VARIANTS.len() as u16))?;
         stdout.execute(Clear(ClearType::FromCursorDown))?;
     }
 
-    stdout.execute(cursor::MoveUp(4))?;
+    stdout.execute(cursor::MoveUp(Extra::VARIANTS.len() as u16 + 1))?;
     stdout.execute(Clear(ClearType::FromCursorDown))?;
 
     println!(

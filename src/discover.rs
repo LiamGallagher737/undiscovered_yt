@@ -3,7 +3,7 @@ use chrono::{DateTime, Datelike, Local};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use yt_api::search::{Order, SearchList, SearchResult};
+use yt_api::search::{ItemType, Order, SearchList, SearchResult};
 use yt_api::ApiKey;
 
 pub enum Discovery {
@@ -15,7 +15,6 @@ pub enum Discovery {
 
 impl Discovery {
     pub const VARIANTS: &'static [&'static str] = &["Webcam", "Pc", "Smartphone", "Misc"];
-    pub const VARIANT_COUNT: usize = Self::VARIANTS.len();
 
     pub fn from_index(n: usize) -> Self {
         match n {
@@ -42,19 +41,14 @@ impl Discovery {
 #[derive(Eq, PartialEq, Copy, Clone)]
 pub enum Extra {
     Date,
-    Other,
-    Other2,
 }
 
 impl Extra {
-    pub const VARIANTS: &'static [&'static str] = &["Date", "Other", "Other2"];
-    pub const VARIANT_COUNT: usize = Self::VARIANTS.len();
+    pub const VARIANTS: &'static [&'static str] = &["Date"];
 
     pub fn from_index(n: usize) -> Self {
         match n {
             0 => Self::Date,
-            1 => Self::Other,
-            2 => Self::Other2,
             _ => panic!("Invalid extra index"),
         }
     }
@@ -71,8 +65,6 @@ impl Extra {
                     date.day()
                 ));
             }
-            Extra::Other => {}
-            Extra::Other2 => {}
         }
     }
 }
@@ -96,7 +88,8 @@ pub fn search(
     let future = SearchList::new(ApiKey::new(api_key))
         .q(query)
         .max_results(results as u8)
-        .order(Order::Date);
+        .order(Order::Date)
+        .item_type(ItemType::Video);
     let result = block_on(future)?;
 
     Ok(result.items)
