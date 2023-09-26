@@ -8,17 +8,23 @@ use crossterm::terminal::{Clear, ClearType};
 use crossterm::{cursor, ExecutableCommand};
 use std::io::{Stdout, Write};
 
+const QUESTION: char = '?';
+const ARROW: char = '❯';
+const FILLED_DOT: char = '◉';
+const OUTLINE_DOT: char = '◯';
+
 pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
-    let question = "?".bright_green();
-    println!(
-        "{question} {}",
-        "What discovery type would you like to use?".bold()
-    );
+    print_question("What discovery type would you like to use?", None);
+
     let mut selected_discovery = 0;
     'outer: loop {
         for (n, option) in Discovery::VARIANTS.iter().enumerate() {
             if n == selected_discovery {
-                println!("{} {}", "❯".bright_red(), option.bright_red().bold());
+                println!(
+                    "{} {}",
+                    ARROW.to_string().bright_red(),
+                    option.bright_red().bold()
+                );
             } else {
                 println!("  {}", option);
             }
@@ -69,36 +75,37 @@ pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
     stdout.execute(cursor::MoveUp(Discovery::VARIANTS.len() as u16 + 1))?;
     stdout.execute(Clear(ClearType::FromCursorDown))?;
 
-    println!(
-        "{question} {} {}",
-        "What discovery type would you like to use?".bold(),
-        Discovery::VARIANTS[selected_discovery].dimmed(),
+    print_question(
+        "What discovery type would you like to use?",
+        Some(Discovery::VARIANTS[selected_discovery]),
     );
 
     Ok(Discovery::from_index(selected_discovery))
 }
 
 pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
-    let question = "?".bright_green();
     println!(
-        "{question} {} ({} to select, {} to proceed)",
+        "{} {} ({} to select, {} to proceed)",
+        "?".bright_green(),
         "Which extras would you like to enable?".bold(),
         "<space>".bright_red(),
         "<enter>".bright_red(),
     );
+
     let mut extras_cursor = 0;
     let mut selected_extras = Vec::new();
     'outer: loop {
         for (n, variant) in Extra::VARIANTS.iter().enumerate() {
             let dot = if selected_extras.contains(&Extra::from_index(n)) {
-                "◉"
+                FILLED_DOT
             } else {
-                "◯"
-            };
+                OUTLINE_DOT
+            }
+            .to_string();
             if n == extras_cursor {
                 println!(
                     "{} {} {}",
-                    "❯".bright_red(),
+                    ARROW.to_string().bright_red(),
                     dot.bright_red(),
                     variant.bright_red().bold()
                 );
@@ -158,36 +165,32 @@ pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
     stdout.execute(cursor::MoveUp(Extra::VARIANTS.len() as u16 + 1))?;
     stdout.execute(Clear(ClearType::FromCursorDown))?;
 
-    println!(
-        "{question} {} {}",
-        "Which extras would you like to enable?".bold(),
-        if selected_extras.is_empty() {
-            "None".dimmed()
+    let answer_list = selected_extras
+        .iter()
+        .map(|e| Extra::VARIANTS[*e as usize])
+        .collect::<Vec<&str>>()
+        .join(", ");
+
+    print_question(
+        "Which extras would you like to enable?",
+        Some(if selected_extras.is_empty() {
+            "None"
         } else {
-            selected_extras
-                .iter()
-                .map(|e| Extra::VARIANTS[*e as usize])
-                .collect::<Vec<&str>>()
-                .join(", ")
-                .dimmed()
-        }
+            &answer_list
+        }),
     );
 
     Ok(selected_extras)
 }
 
-pub fn result_count(stdout: &mut Stdout) -> Result<usize> {
-    let question = "?".bright_green();
-    println!(
-        "{question} {}",
-        "How many results would you like to search for?".bold()
-    );
+pub fn result_count(stdout: &mut Stdout) -> Result<u8> {
+    print_question("How many results would you like to search for?", None);
 
     stdout.execute(cursor::Show)?;
 
     let mut input = String::from("5");
     'outer: loop {
-        print!("{} {input}", "❯❯".bright_red());
+        print!("{} {input}", ARROW.to_string().repeat(2).bright_red());
         stdout.flush()?;
         loop {
             let Event::Key(key) = read()? else {
@@ -226,11 +229,20 @@ pub fn result_count(stdout: &mut Stdout) -> Result<usize> {
     stdout.execute(cursor::MoveUp(1))?;
     stdout.execute(Clear(ClearType::FromCursorDown))?;
 
-    println!(
-        "{question} {} {}",
-        "How many results would you like to search for?".bold(),
-        input.dimmed(),
+    let num = input.parse::<usize>()?.min(255) as u8;
+
+    print_question(
+        "How many results would you like to search for?",
+        Some(&num.to_string()),
     );
 
-    Ok(input.parse()?)
+    Ok(num)
+}
+
+fn print_question(question: &str, answer: Option<&str>) {
+    let symbol = QUESTION.to_string().bright_green();
+    match answer {
+        None => println!("{symbol} {}", question.bold()),
+        Some(ans) => println!("{symbol} {} {}", question.bold(), ans.dimmed()),
+    }
 }

@@ -72,7 +72,7 @@ impl Extra {
 pub fn search(
     discovery: Discovery,
     extras: Vec<Extra>,
-    results: usize,
+    results: u8,
     api_key: String,
 ) -> Result<Vec<SearchResult>> {
     let mut rng = thread_rng();
@@ -87,7 +87,7 @@ pub fn search(
 
     let future = SearchList::new(ApiKey::new(api_key))
         .q(query)
-        .max_results(results as u8)
+        .max_results(results)
         .order(Order::Date)
         .item_type(ItemType::Video);
     let result = block_on(future)?;
