@@ -33,6 +33,7 @@ pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
             let code = key.code;
             let old_selected = selected_discovery;
             match code {
+                KeyCode::Esc => cleanup(stdout),
                 KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => cleanup(stdout),
                 KeyCode::Up => {
                     if selected_discovery > 0 {
@@ -115,6 +116,7 @@ pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
             let code = key.code;
             let old_selected = extras_cursor;
             match code {
+                KeyCode::Esc => cleanup(stdout),
                 KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => cleanup(stdout),
                 KeyCode::Up => {
                     if extras_cursor > 0 {
@@ -196,6 +198,7 @@ pub fn result_count(stdout: &mut Stdout) -> Result<usize> {
             };
             let code = key.code;
             match code {
+                KeyCode::Esc => cleanup(stdout),
                 KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => cleanup(stdout),
                 KeyCode::Char(c @ '0'..='9') => {
                     input.push(c);
