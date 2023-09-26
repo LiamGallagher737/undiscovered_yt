@@ -1,54 +1,87 @@
-use crate::app::{run_app, App};
-use crate::config::{load_config, save_config};
+use crate::config::Config;
+use crate::discover::search;
+use crate::questions::{discovery_type, extras_list, result_count};
+use crate::results::results_interface;
 use anyhow::{Context, Result};
-use crossterm::{
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use ratatui::{backend::CrosstermBackend, Terminal};
+use clap::Parser;
+use colored::Colorize;
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::{cursor, ExecutableCommand};
 use std::io;
 use std::io::Stdout;
 
-mod app;
 mod config;
 mod discover;
-mod ui;
+mod questions;
+mod results;
 
 const BINARY_NAME: &str = "Undiscovered_YT";
-const TICK_RATE_MILLIS: u64 = 250;
+const STARTUP_TITLE: &str = r#"
+  _   _           _ _                                     _  __   _______
+ | | | |         | (_)                                   | | \ \ / /_   _|
+ | | | |_ __   __| |_ ___  ___ _____   _____ _ __ ___  __| |  \ V /  | |
+ | | | | '_ \ / _` | / __|/ __/ _ \ \ / / _ \ '__/ _ \/ _` |   \ /   | |
+ | |_| | | | | (_| | \__ \ (_| (_) \ V /  __/ | |  __/ (_| |   | |   | |
+  \___/|_| |_|\__,_|_|___/\___\___/ \_/ \___|_|  \___|\__,_|   \_/   \_/
+"#;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Your YouTube API key (only needed once)
+    #[arg(short = 'k', long)]
+    api_key: Option<String>,
+}
 
 fn main() -> Result<()> {
-    let mut terminal = setup_terminal().context("Terminal Setup Failed")?;
+    let args = Args::parse();
+    let mut config = Config::load().context("Failed to load config")?;
 
-    // Create and run App
-    let config = load_config().unwrap_or_default();
-    let mut app = App::new(config);
-    let res = run_app(&mut terminal, &mut app);
-
-    // Save Config
-    if let Err(e) = save_config(app.config) {
-        println!("Error saving config!\n{e:#?}");
+    if let Some(key) = args.api_key {
+        config.api_key = key;
+        config.save().context("Failed to save config")?;
+        println!("Successfully saved API key! You may now run without the 'api_key' argument.");
+        return Ok(());
     }
 
-    restore_terminal(&mut terminal)?;
-
-    if let Err(err) = res {
-        println!("{:?}", err)
-    }
-
-    Ok(())
-}
-
-fn setup_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>> {
     let mut stdout = io::stdout();
-    enable_raw_mode().context("failed to enable raw mode")?;
-    execute!(stdout, EnterAlternateScreen).context("unable to enter alternate screen")?;
-    Terminal::new(CrosstermBackend::new(stdout)).context("creating terminal failed")
+    stdout.execute(EnableMouseCapture)?.execute(cursor::Hide)?;
+
+    if config.title_text {
+        // Ignore initial newline character
+        println!("{}", &STARTUP_TITLE[1..].bright_red());
+    }
+
+    let selected_discovery = discovery_type(&mut stdout)?;
+    let selected_extra = extras_list(&mut stdout)?;
+    let result_count = result_count(&mut stdout)?;
+
+    let results = search(
+        selected_discovery,
+        selected_extra,
+        result_count,
+        config.api_key,
+    )?;
+
+    println!();
+    println!(
+        "{} to move, {} to open, {} to exit",
+        "<↑/↓>".bright_red(),
+        "<enter>".bright_red(),
+        "<esc>".bright_red()
+    );
+
+    results_interface(&mut stdout, results)?;
+
+    cleanup(&mut stdout);
 }
 
-fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<()> {
-    disable_raw_mode().context("failed to disable raw mode")?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)
-        .context("unable to switch to main screen")?;
-    terminal.show_cursor().context("unable to show cursor")
+fn cleanup(stdout: &mut Stdout) -> ! {
+    stdout
+        .execute(DisableMouseCapture)
+        .expect("Failed to disable mouse capture")
+        .execute(cursor::Show)
+        .expect("Failed to unhide cursor");
+    println!();
+    std::process::exit(0);
 }

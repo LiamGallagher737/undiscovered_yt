@@ -1,9 +1,8 @@
-use crate::app::App;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
+use chrono::{DateTime, Datelike, Local};
 use futures::executor::block_on;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::thread;
 use yt_api::search::{Order, SearchList, SearchResult};
 use yt_api::ApiKey;
 
@@ -15,8 +14,18 @@ pub enum Discovery {
 }
 
 impl Discovery {
-    pub const OPTIONS: &'static [&'static str] = &["webcam", "pc", "smartphone", "misc"];
-    pub const _OPTION_COUNT: usize = Self::OPTIONS.len();
+    pub const VARIANTS: &'static [&'static str] = &["Webcam", "Pc", "Smartphone", "Misc"];
+    pub const VARIANT_COUNT: usize = Self::VARIANTS.len();
+
+    pub fn from_index(n: usize) -> Self {
+        match n {
+            0 => Self::Webcam,
+            1 => Self::Pc,
+            2 => Self::SmartPhone,
+            3 => Self::Misc,
+            _ => panic!("Invalid discovery index"),
+        }
+    }
 
     pub fn query_options(self) -> &'static [&'static str] {
         match self {
@@ -30,42 +39,65 @@ impl Discovery {
     }
 }
 
-pub fn start_discovering(app: &mut App, discovery: Discovery) {
+#[derive(Eq, PartialEq, Copy, Clone)]
+pub enum Extra {
+    Date,
+    Other,
+    Other2,
+}
+
+impl Extra {
+    pub const VARIANTS: &'static [&'static str] = &["Date", "Other", "Other2"];
+    pub const VARIANT_COUNT: usize = Self::VARIANTS.len();
+
+    pub fn from_index(n: usize) -> Self {
+        match n {
+            0 => Self::Date,
+            1 => Self::Other,
+            2 => Self::Other2,
+            _ => panic!("Invalid extra index"),
+        }
+    }
+
+    fn apply(&self, query: &mut String) {
+        match self {
+            Extra::Date => {
+                let date: DateTime<Local> = Local::now();
+                query.push(' ');
+                query.push_str(&format!(
+                    "{}{:0>2}{:0>2}",
+                    date.year(),
+                    date.month(),
+                    date.day()
+                ));
+            }
+            Extra::Other => {}
+            Extra::Other2 => {}
+        }
+    }
+}
+
+pub fn search(
+    discovery: Discovery,
+    extras: Vec<Extra>,
+    results: usize,
+    api_key: String,
+) -> Result<Vec<SearchResult>> {
     let mut rng = thread_rng();
 
     let options = discovery.query_options();
     let option = *options.choose(&mut rng).unwrap();
+    let mut query = String::from(option);
 
-    let api_key = app.config.api_key.clone();
-    let results = app.results.clone();
-    let thread = thread::spawn(move || {
-        let future = handle_search(option.to_string(), api_key);
-        let search_results = block_on(future);
-        match search_results {
-            Ok(mut data) => {
-                results.lock().unwrap().append(&mut data);
-            }
-            Err(_) => {
-                panic!("err getting results")
-            }
-        }
-    });
-
-    if let Some(_handle) = &app.discover_thread {
-        // TODO: Stop thread from adding more results
+    for extra in extras {
+        extra.apply(&mut query);
     }
 
-    app.discover_thread = Some(thread);
-}
-
-pub async fn handle_search(query: String, api_key: String) -> Result<Vec<SearchResult>> {
-    let result = SearchList::new(ApiKey::new(api_key))
+    let future = SearchList::new(ApiKey::new(api_key))
         .q(query)
-        .max_results(5)
-        .order(Order::Date)
-        .await;
-    match result {
-        Ok(response) => Ok(response.items),
-        Err(e) => Err(anyhow!("Failed to get results: {e:?}")),
-    }
+        .max_results(results as u8)
+        .order(Order::Date);
+    let result = block_on(future)?;
+
+    Ok(result.items)
 }
