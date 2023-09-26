@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use colored::Colorize;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::terminal::{DisableLineWrap, EnableLineWrap};
 use crossterm::{cursor, ExecutableCommand};
 use std::io;
 use std::io::Stdout;
@@ -45,7 +46,10 @@ fn main() -> Result<()> {
     }
 
     let mut stdout = io::stdout();
-    stdout.execute(EnableMouseCapture)?.execute(cursor::Hide)?;
+    stdout
+        .execute(EnableMouseCapture)?
+        .execute(cursor::Hide)?
+        .execute(DisableLineWrap)?;
 
     if config.title_text {
         // Ignore initial newline character
@@ -81,7 +85,9 @@ fn cleanup(stdout: &mut Stdout) -> ! {
         .execute(DisableMouseCapture)
         .expect("Failed to disable mouse capture")
         .execute(cursor::Show)
-        .expect("Failed to unhide cursor");
+        .expect("Failed to unhide cursor")
+        .execute(EnableLineWrap)
+        .expect("Failed to enable word wrap");
     println!();
     std::process::exit(0);
 }
