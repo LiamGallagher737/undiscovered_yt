@@ -24,7 +24,9 @@ pub fn discovery_type(stdout: &mut Stdout) -> Result<Discovery> {
             }
         }
         loop {
-            let Event::Key(key) = read()? else { continue; };
+            let Event::Key(key) = read()? else {
+                continue;
+            };
             if key.kind != Press {
                 continue;
             };
@@ -104,7 +106,9 @@ pub fn extras_list(stdout: &mut Stdout) -> Result<Vec<Extra>> {
             }
         }
         loop {
-            let Event::Key(key) = read()? else { continue; };
+            let Event::Key(key) = read()? else {
+                continue;
+            };
             if key.kind != Press {
                 continue;
             };
@@ -186,7 +190,9 @@ pub fn result_count(stdout: &mut Stdout) -> Result<usize> {
         print!("{} {input}", "❯❯".bright_red());
         stdout.flush()?;
         loop {
-            let Event::Key(key) = read()? else { continue; };
+            let Event::Key(key) = read()? else {
+                continue;
+            };
             if key.kind != Press {
                 continue;
             };

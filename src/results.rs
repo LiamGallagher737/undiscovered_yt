@@ -45,7 +45,9 @@ pub fn results_interface(stdout: &mut Stdout, results: Vec<SearchResult>) -> Res
             if let Event::Resize(_, _) = event {
                 break;
             };
-            let Event::Key(key) = event else { continue; };
+            let Event::Key(key) = event else {
+                continue;
+            };
             if key.kind != Press {
                 continue;
             };

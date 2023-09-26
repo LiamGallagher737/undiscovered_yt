@@ -16,14 +16,14 @@ mod questions;
 mod results;
 
 const BINARY_NAME: &str = "Undiscovered_YT";
-const STARTUP_TITLE: &str = r#"
+const STARTUP_TITLE: &str = r"
   _   _           _ _                                     _  __   _______
  | | | |         | (_)                                   | | \ \ / /_   _|
  | | | |_ __   __| |_ ___  ___ _____   _____ _ __ ___  __| |  \ V /  | |
  | | | | '_ \ / _` | / __|/ __/ _ \ \ / / _ \ '__/ _ \/ _` |   \ /   | |
  | |_| | | | | (_| | \__ \ (_| (_) \ V /  __/ | |  __/ (_| |   | |   | |
   \___/|_| |_|\__,_|_|___/\___\___/ \_/ \___|_|  \___|\__,_|   \_/   \_/
-"#;
+";
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
