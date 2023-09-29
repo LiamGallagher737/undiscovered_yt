@@ -11,6 +11,14 @@ A simple CLI for finding random, never seen before YouTube videos
 
 </div>
 
+## Setup
+
+After installing, add your API key with the following.
+
+```sh
+undiscovered_yt -k <API_KEY>
+```
+
 ## Keybinds
 
 | Key              | Description           |
